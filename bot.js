@@ -15,10 +15,21 @@ const webhook = new discord.WebhookClient(config.id, config.token);
 var delay = config.delay;
 var last_date = new Date().getTime() / 1000;
 
+function pretty_class_name(str)
+{
+    return str.charAt(0).toUpperCase() + str.slice(1, str === 'heavyweapons' ? 5 : str.length);
+}
+
+function sort_classes(a, b)
+{
+    let classes = ['scout', 'soldier', 'pyro', 'demoman', 'heavyweapons', 'engineer', 'medic', 'sniper', 'spy'];
+    return classes.indexOf(a.class_stats[0].type) - classes.indexOf(b.class_stats[0].type);
+}
+
 function toMMSS(num)
 {
     var sec_num = parseInt(num, 10); // don't forget the second param
-    var minutes   = Math.floor(sec_num / 60);
+    var minutes = Math.floor(sec_num / 60);
     var seconds = sec_num - (minutes * 60);
 
     if (minutes < 10) minutes = '0' + minutes;
@@ -45,15 +56,29 @@ async function poll_logstf()
             let author = await got(`http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${config.steamapi}&steamids=${config.steamid64}`);
             let author_player = JSON.parse(author.body).response.players[0];
 
-            let red_players = '', blu_players = '';
+            let red_players = [], blu_players = [];
             for (let name in log_data.names)
             {
                 let player = log_data.players[name];
-
+                player.name = log_data.names[name];
+                
                 if (player.team === 'Red')
-                    red_players += `**${log_data.names[name]}** (${player.class_stats[0].type})\n`;
+                    red_players.push(player);
                 else if (player.team === 'Blue')
-                    blu_players += `**${log_data.names[name]}** (${player.class_stats[0].type})\n`;
+                    blu_players.push(player);
+            }
+
+            red_players.sort(sort_classes);
+            blu_players.sort(sort_classes);
+
+            let red_player_str = '', blu_player_str = '';
+            for (let player of red_players)
+            {
+                red_player_str += `${pretty_class_name(player.class_stats[0].type)}: **${player.name}**\n`;
+            }
+            for (let player of blu_players)
+            {
+                blu_player_str += `${pretty_class_name(player.class_stats[0].type)}: **${player.name}**\n`;
             }
 
             let embed = new discord.RichEmbed()
@@ -64,8 +89,8 @@ async function poll_logstf()
                 .setURL(`https://logs.tf/${log.id}`)
                 .setThumbnail('http://logs.tf/assets/img/logo-social.png')
                 .setTimestamp()
-                .addField('BLU', blu_players)
-                .addField('RED', red_players);
+                .addField('BLU', blu_player_str)
+                .addField('RED', red_player_str);
             
             webhook.send(embed);
         }
