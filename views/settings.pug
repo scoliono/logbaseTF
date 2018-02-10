@@ -1,0 +1,29 @@
+extends layout
+
+block content
+    h1 LogBaseTF Settings
+    form(action='/settings', method='post')
+        label(for='enabled') Enabled 
+        if data.enabled === 'on'
+            input(type='checkbox', name='enabled', checked)
+        else
+            input(type='checkbox', name='enabled')
+        br
+        input(type='submit', value='Save')
+
+    br
+    h2 Advanced Settings
+    label(for='id') Webhook ID 
+    input(type='text', name='id' value=config.id disabled)
+    br
+    label(for='token') Webhook Token 
+    input(type='text', name='token' value=config.token size='85' disabled)
+    br
+    label(for='steamapi') Steam API Key 
+    input(type='text', name='steamapi' value=config.steamapi size='40' disabled)
+    br
+    label(for='steamid64') SteamID64 
+    input(type='text', name='steamid64' value= config.steamid64 disabled)
+    br
+    label(for='delay') Polling Delay (ms) 
+    input(type='text', name='delay' value=config.delay disabled)
