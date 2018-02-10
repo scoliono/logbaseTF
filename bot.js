@@ -3,6 +3,7 @@
 
 var got = require('got'),
     discord = require('discord.js'),
+    is_equal = require('lodash.isequal'),
     cp = require('child_process'),
     path = require('path'),
     fs = require('fs'),
@@ -100,6 +101,7 @@ async function poll_logstf()
 // Start
 (async () => {
     console.log(`Webhook started (ID: ${config.id})`);
+    webhook.send(':white_check_mark: Webhook started');
 
     let proc = cp.fork(path.join(__dirname, 'bin', 'www'));
     console.log(`Webserver launched`);
@@ -108,7 +110,17 @@ async function poll_logstf()
 
     // Reload config every so often
     setInterval(() => {
+        let old_options = options;
         options = JSON.parse(fs.readFileSync(path.join(__dirname, 'options.json')));
+
+        if (!is_equal(old_options, options))
+        {
+            if (options.enabled)
+                webhook.send(':white_check_mark: Webhook has been enabled');
+            else
+                webhook.send(':octagonal_sign: Webhook has been disabled');
+        }
+
         if (options.enabled === 'on')
         {
             setTimeout(async () => {
@@ -117,3 +129,9 @@ async function poll_logstf()
         }
     }, 5000);
 })();
+
+process.once('SIGINT', async (code) => {
+    await webhook.send(':octagonal_sign: Webhook shutting down');
+    console.log('Shutting down...');
+    process.exit(0);
+});
